@@ -23,6 +23,7 @@ package main
 import (
 	"fmt"
 	"os/exec"
+	"strings"
 	"testing"
 	"time"
 
@@ -42,7 +43,7 @@ func healthOk(ctx thrift.Context) (ok bool, message string) {
 }
 
 func TestOk(t *testing.T) {
-	channel, _, hostPort := SetupServer(t, healthOk)
+	channel, hostPort := SetupServer(t, healthOk)
 	strOut, err := Run([]string{fmt.Sprintf("--peer=%s", hostPort), "--serviceName=testing"})
 
 	assert.NoError(t, err, "no error from tcheck")
@@ -53,7 +54,7 @@ func TestOk(t *testing.T) {
 }
 
 func TestNotOk(t *testing.T) {
-	channel, _, hostPort := SetupServer(t, healthNotOk)
+	channel, hostPort := SetupServer(t, healthNotOk)
 	strOut, err := Run([]string{fmt.Sprintf("--peer=%s", hostPort), "--serviceName=testing"})
 
 	strErr := fmt.Sprintf("%v", err)
@@ -64,16 +65,36 @@ func TestNotOk(t *testing.T) {
 	channel.Close()
 }
 
-func SetupServer(t *testing.T, fn thrift.HealthFunc) (*tchannel.Channel, *thrift.Server, string) {
+func TestNoHandler(t *testing.T) {
+	channel, hostPort := SetupServer(t, nil)
+	strOut, err := Run([]string{fmt.Sprintf("--peer=%s", hostPort), "--serviceName=testing"})
+
+	strErr := fmt.Sprintf("%v", err)
+	assert.Equal(t, "exit status 2", strErr, "correct return code")
+
+	errMsg := tchannel.NewSystemError(tchannel.ErrCodeBadRequest, "no handler for service")
+	expectedPrefix := "NOT OK testing\nError: " + errMsg.Error()
+	assert.True(t, strings.HasPrefix(strOut, expectedPrefix),
+		"Expected STDOUT to have prefix:\n%s\nbut got:\n%s", expectedPrefix, strOut)
+
+	channel.Close()
+}
+
+func SetupServer(t *testing.T, fn thrift.HealthFunc) (*tchannel.Channel, string) {
 	_, cancel := tchannel.NewContext(time.Second * 10)
 	defer cancel()
 
-	tchan := testutils.NewServer(t, testutils.NewOpts().SetServiceName("testing"))
-	server := thrift.NewServer(tchan)
+	opts := testutils.NewOpts().
+		SetServiceName("testing").
+		DisableLogVerification()
+	tchan := testutils.NewServer(t, opts)
 
-	server.RegisterHealthHandler(fn)
+	if fn != nil {
+		server := thrift.NewServer(tchan)
+		server.RegisterHealthHandler(fn)
+	}
 
-	return tchan, server, tchan.PeerInfo().HostPort
+	return tchan, tchan.PeerInfo().HostPort
 }
 
 func Run(args []string) (string, error) {

@@ -63,7 +63,7 @@ func main() {
 	val, err := client.Health(ctx)
 
 	if err != nil {
-		fmt.Printf("NOT OK %v\n", *serviceName, err)
+		fmt.Printf("NOT OK %v\nError: %v\n", *serviceName, err)
 		os.Exit(2)
 	} else if val.Ok != true {
 		fmt.Printf("NOT OK %v\n", *val.Message)
