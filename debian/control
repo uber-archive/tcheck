@@ -1,0 +1,12 @@
+Source: uber-tcheck
+Section: Utilities
+Priority: extra
+Maintainer: Andrew Andrade <aandrade@uber.com>
+Build-Depends: debhelper (>= 8.0.0), golang (>= 2:1.5.3-1), uber-glide, git, mercurial
+Standards-Version: 3.9.2
+Homepage: https://github.com/uber/tcheck
+
+Package: uber-tcheck
+Architecture: all
+Depends: ${misc:Depends}
+Description: TChannel health check utility
