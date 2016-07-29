@@ -1,0 +1,14 @@
+Format: http://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: uber-tcheck
+Source: https://github.com/uber/tcheck
+
+Files: *
+Copyright: 2016 Uber Technologies, Inc.
+License: MIT
+
+Files: debian/*
+Copyright: 2016 Uber Technologies, Inc.
+License: GPL-3
+    See `/usr/share/common-licenses/GPL-3'.
+
+
