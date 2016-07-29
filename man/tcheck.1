@@ -1,0 +1,37 @@
+.TH tcheck 1 "29 July 2016"
+.SH NAME
+tcheck \- tchannel health check utility
+.SH SYNOPSIS
+\fBtcheck\fP [OPTIONS]
+.SH DESCRIPTION
+
+Simple go TChannel / Hyperbahn health checker.
+.PP
+
+.SH OPTIONS
+.TP
+\fB\fB\-\-hostsFile\fR\fP
+specify Hyperbahn hosts file; default is /etc/uber/hyperbahn/hosts.json
+.TP
+\fB\fB\-\-peer\fR\fP
+a singular host:port to hit. overrides --hostsFile
+.TP
+\fB\fB\-\-serviceName\fR\fP
+specify service name. default hyperbahn
+
+.SH EXAMPLES
+.PP
+.nf
+.RS
+$ tcheck --peer 127.0.0.1:21300 --serviceName populous
+.RE
+.fi
+.nf
+.RS
+$ tcheck --serviceName keyvalue
+.RE
+.fi
+.PP
+.SH LICENSE
+.TP
+MIT
