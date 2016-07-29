@@ -7,8 +7,10 @@ CWD=$(shell pwd)
 export GOPATH=$(CWD)/build
 BINDIR=$(GOPATH)/bin
 
+.PHONY: all
 all: $(BINDIR)/$(BINNAME)
 
+.PHONY: build
 build:
 	go build
 
@@ -23,10 +25,10 @@ $(BINDIR)/$(BINNAME): $(GOPATH)
 	cd $(GOPATH)/src/$(PKG) && glide install
 	GOBIN=$(BINDIR) go install $(PKG)
 
+.PHONY: install
 install: $(BINDIR)/$(BINNAME)
 	install -D $(BINDIR)/$(BINNAME) $(DESTDIR)/$(PREFIX)/$(BINNAME)
 
+.PHONY: clean
 clean:
 	rm -rf build $(BINNAME)
-
-.PHONY: build install clean
