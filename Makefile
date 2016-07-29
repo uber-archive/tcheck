@@ -1,6 +1,6 @@
 PREFIX=/usr/bin
 
-PKG=github.com/yarpc/yab
+PKG=github.com/uber/tcheck
 BINNAME=$(notdir $(PKG))
 CWD=$(shell pwd)
 
@@ -19,7 +19,7 @@ $(GOPATH):
 
 $(BINDIR)/$(BINNAME): $(GOPATH)
 	git clone --depth 1 https://$(PKG) $(GOPATH)/src/$(PKG)
-	cp $(GOPATH)/src/$(PKG)/man/yab.1 debian/
+	cp $(GOPATH)/src/$(PKG)/man/tcheck.1 debian/
 	cd $(GOPATH)/src/$(PKG) && glide install
 	GOBIN=$(BINDIR) go install $(PKG)
 
