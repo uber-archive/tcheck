@@ -1,0 +1,13 @@
+package: github.com/uber/tcheck
+import:
+- package: github.com/apache/thrift
+  subpackages:
+  - lib/go/thrift
+- package: github.com/uber/tchannel-go
+  subpackages:
+  - hyperbahn
+  - thrift
+testImport:
+- package: github.com/stretchr/testify
+  subpackages:
+  - assert
