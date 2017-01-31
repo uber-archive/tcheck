@@ -1,0 +1,50 @@
+hash: 09602a16d38ee3c1b8c97e557c6cccf3ca2375bcb52bcd9b347b2089f2a5f1a8
+updated: 2017-01-31T15:11:35.965179215-08:00
+imports:
+- name: github.com/apache/thrift
+  version: 2d6060d882069ed3e3d6302aa63ea7eb4bb155ad
+  subpackages:
+  - lib/go/thrift
+- name: github.com/davecgh/go-spew
+  version: 346938d642f2ec3594ed81d874461961cd0faa76
+  subpackages:
+  - spew
+- name: github.com/opentracing/opentracing-go
+  version: 0c3154a3c2ce79d3271985848659870599dfb77c
+  subpackages:
+  - ext
+  - log
+- name: github.com/pmezard/go-difflib
+  version: 792786c7400a136282c1664665ae0a8db921c6c2
+  subpackages:
+  - difflib
+- name: github.com/stretchr/testify
+  version: 4d4bfba8f1d1027c4fdbe371823030df51419987
+  subpackages:
+  - assert
+  - mock
+  - require
+- name: github.com/uber-go/atomic
+  version: 0c9e689d64f004564b79d9a663634756df322902
+- name: github.com/uber/tchannel-go
+  version: aeda4836756434b4077ca7ef4b6a8c0d6b382101
+  subpackages:
+  - hyperbahn
+  - hyperbahn/gen-go/hyperbahn
+  - internal/argreader
+  - json
+  - raw
+  - relay
+  - relay/relaytest
+  - testutils
+  - testutils/goroutines
+  - thrift
+  - thrift/gen-go/meta
+  - tnet
+  - trand
+  - typed
+- name: golang.org/x/net
+  version: f2499483f923065a842d38eb4c7f1927e6fc6e6d
+  subpackages:
+  - context
+testImports: []
