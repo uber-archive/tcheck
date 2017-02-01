@@ -53,14 +53,15 @@ func (e exitError) Error() string {
 }
 
 var (
-	serviceName = flag.String("serviceName", "", "service name to check health of")
-	peer        = flag.String("peer", "", "peer to hit directly")
+	peer        = flag.String("peer", "", "Peer host:port to health check")
+	serviceName = flag.String("serviceName", "", "Service name to health check")
+	timeout     = flag.Duration("timeout", time.Second, "Timeout for the health check")
 )
 
 func main() {
 	flag.Parse()
 
-	if err := healthCheck(*peer, *serviceName); err != nil {
+	if err := healthCheck(*peer, *serviceName, *timeout); err != nil {
 		fmt.Println(err)
 		_osExit(getExitCode(err))
 	}
@@ -75,12 +76,15 @@ func getExitCode(err error) int {
 	return _exitUnknown
 }
 
-func healthCheck(peer, serviceName string) error {
+func healthCheck(peer, serviceName string, timeout time.Duration) error {
 	if peer == "" {
 		return exitError{_exitUsage, "Must specify a peer to health check"}
 	}
 	if serviceName == "" {
 		return exitError{_exitUsage, "Must specify a service name for the destination"}
+	}
+	if timeout <= 0 {
+		return exitError{_exitUsage, "Must specify a positive timeout"}
 	}
 
 	ch, err := tchannel.NewChannel(_serviceName, nil)
@@ -92,7 +96,7 @@ func healthCheck(peer, serviceName string) error {
 	thriftClient := thrift.NewClient(ch, serviceName, nil)
 	client := meta.NewTChanMetaClient(thriftClient)
 
-	ctx, cancel := thrift.NewContext(time.Second)
+	ctx, cancel := thrift.NewContext(timeout)
 	defer cancel()
 
 	val, err := client.Health(ctx)

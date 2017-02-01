@@ -25,6 +25,7 @@ import (
 	"os"
 	"runtime"
 	"testing"
+	"time"
 
 	"github.com/uber/tchannel-go"
 	"github.com/uber/tchannel-go/testutils"
@@ -68,10 +69,16 @@ func TestHealthCheckBadArgs(t *testing.T) {
 		return true, ""
 	})
 
+	timeoutHandler := setupServer(t, func(_ thrift.Context) (ok bool, msg string) {
+		time.Sleep(100 * time.Millisecond)
+		return true, ""
+	})
+
 	tests := []struct {
 		msg      string
 		peer     string
 		svc      string
+		timeout  time.Duration
 		fn       thrift.HealthFunc
 		wantExit int
 		wantErr  string
@@ -86,6 +93,13 @@ func TestHealthCheckBadArgs(t *testing.T) {
 			msg:      "missing peer",
 			peer:     "",
 			svc:      "svc",
+			wantExit: _exitUsage,
+		},
+		{
+			msg:      "negative timeout",
+			peer:     "127.0.0.1",
+			svc:      "svc",
+			timeout:  -time.Second,
 			wantExit: _exitUsage,
 		},
 		{
@@ -109,11 +123,23 @@ func TestHealthCheckBadArgs(t *testing.T) {
 			wantExit: _exitExplitiUnhealthy,
 			wantErr:  "test-error",
 		},
+		{
+			msg:      "timeout",
+			peer:     timeoutHandler.PeerInfo().HostPort,
+			svc:      "svc",
+			timeout:  50 * time.Millisecond,
+			wantExit: _exitUnknownUnhealthy,
+			wantErr:  "ErrCodeTimeout",
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.msg, func(t *testing.T) {
-			err := healthCheck(tt.peer, tt.svc)
+			timeout := time.Second
+			if tt.timeout != 0 {
+				timeout = tt.timeout
+			}
+			err := healthCheck(tt.peer, tt.svc, timeout)
 			if tt.wantExit > 0 {
 				require.Error(t, err)
 				assert.Equal(t, tt.wantExit, getExitCode(err), "Unexpected error code")
