@@ -21,17 +21,17 @@
 package main
 
 import (
-	"fmt"
-	"os/exec"
-	"strings"
+	"errors"
+	"os"
+	"runtime"
 	"testing"
-	"time"
 
 	"github.com/uber/tchannel-go"
 	"github.com/uber/tchannel-go/testutils"
 	"github.com/uber/tchannel-go/thrift"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func healthNotOk(ctx thrift.Context) (ok bool, message string) {
@@ -42,50 +42,9 @@ func healthOk(ctx thrift.Context) (ok bool, message string) {
 	return true, "hello world"
 }
 
-func TestOk(t *testing.T) {
-	channel, hostPort := SetupServer(t, healthOk)
-	strOut, err := Run([]string{fmt.Sprintf("--peer=%s", hostPort), "--serviceName=testing"})
-
-	assert.NoError(t, err, "no error from tcheck")
-
-	assert.Equal(t, "OK\n", strOut, "tcheck correct output")
-
-	channel.Close()
-}
-
-func TestNotOk(t *testing.T) {
-	channel, hostPort := SetupServer(t, healthNotOk)
-	strOut, err := Run([]string{fmt.Sprintf("--peer=%s", hostPort), "--serviceName=testing"})
-
-	strErr := fmt.Sprintf("%v", err)
-	assert.Equal(t, "exit status 3", strErr, "correct return code")
-
-	assert.Equal(t, "NOT OK hello world\n", strOut, "tcheck correct output")
-
-	channel.Close()
-}
-
-func TestNoHandler(t *testing.T) {
-	channel, hostPort := SetupServer(t, nil)
-	strOut, err := Run([]string{fmt.Sprintf("--peer=%s", hostPort), "--serviceName=testing"})
-
-	strErr := fmt.Sprintf("%v", err)
-	assert.Equal(t, "exit status 2", strErr, "correct return code")
-
-	errMsg := tchannel.NewSystemError(tchannel.ErrCodeBadRequest, "no handler for service")
-	expectedPrefix := "NOT OK testing\nError: " + errMsg.Error()
-	assert.True(t, strings.HasPrefix(strOut, expectedPrefix),
-		"Expected STDOUT to have prefix:\n%s\nbut got:\n%s", expectedPrefix, strOut)
-
-	channel.Close()
-}
-
-func SetupServer(t *testing.T, fn thrift.HealthFunc) (*tchannel.Channel, string) {
-	_, cancel := tchannel.NewContext(time.Second * 10)
-	defer cancel()
-
+func setupServer(t *testing.T, fn thrift.HealthFunc) *tchannel.Channel {
 	opts := testutils.NewOpts().
-		SetServiceName("testing").
+		SetServiceName("svc").
 		DisableLogVerification()
 	tchan := testutils.NewServer(t, opts)
 
@@ -93,13 +52,119 @@ func SetupServer(t *testing.T, fn thrift.HealthFunc) (*tchannel.Channel, string)
 		server := thrift.NewServer(tchan)
 		server.RegisterHealthHandler(fn)
 	}
-
-	return tchan, tchan.PeerInfo().HostPort
+	return tchan
 }
 
-func Run(args []string) (string, error) {
-	cmd := exec.Command("./tcheck", args...)
-	out, err := cmd.Output()
-	strOut := string(out)
-	return strOut, err
+func TestHealthCheckBadArgs(t *testing.T) {
+	noHandler := setupServer(t, nil)
+	defer noHandler.Close()
+
+	unhealthyHandler := setupServer(t, func(_ thrift.Context) (ok bool, msg string) {
+		return false, "test-error"
+	})
+	defer unhealthyHandler.Close()
+
+	healthyHandler := setupServer(t, func(_ thrift.Context) (ok bool, msg string) {
+		return true, ""
+	})
+
+	tests := []struct {
+		msg      string
+		peer     string
+		svc      string
+		fn       thrift.HealthFunc
+		wantExit int
+		wantErr  string
+	}{
+		{
+			msg:      "missing service",
+			peer:     "127.0.0.1",
+			svc:      "",
+			wantExit: _exitUsage,
+		},
+		{
+			msg:      "missing peer",
+			peer:     "",
+			svc:      "svc",
+			wantExit: _exitUsage,
+		},
+		{
+
+			msg:      "healthy server",
+			peer:     healthyHandler.PeerInfo().HostPort,
+			svc:      "svc",
+			wantExit: 0,
+		},
+		{
+			msg:      "no health handler",
+			peer:     noHandler.PeerInfo().HostPort,
+			svc:      "svc",
+			wantExit: _exitUnknownUnhealthy,
+			wantErr:  "ErrCodeBadRequest",
+		},
+		{
+			msg:      "unhealthy health handler",
+			peer:     unhealthyHandler.PeerInfo().HostPort,
+			svc:      "svc",
+			wantExit: _exitExplitiUnhealthy,
+			wantErr:  "test-error",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.msg, func(t *testing.T) {
+			err := healthCheck(tt.peer, tt.svc)
+			if tt.wantExit > 0 {
+				require.Error(t, err)
+				assert.Equal(t, tt.wantExit, getExitCode(err), "Unexpected error code")
+				assert.Contains(t, err.Error(), tt.wantErr, "Missing expected error")
+				return
+			}
+
+			require.NoError(t, err)
+		})
+	}
+}
+
+func TestIntegrationSuccess(t *testing.T) {
+	server := setupServer(t, nil)
+	defer server.Close()
+
+	// Set up a default health handler.
+	thrift.NewServer(server)
+
+	os.Args = []string{"tcheck", "--peer", server.PeerInfo().HostPort, "--serviceName", server.ServiceName()}
+	main()
+}
+
+func TestIntegrationError(t *testing.T) {
+	defer func() { _osExit = os.Exit }()
+
+	var exitCode int
+	_osExit = func(code int) {
+		exitCode = code
+		runtime.Goexit()
+	}
+
+	server := setupServer(t, nil)
+	defer server.Close()
+
+	// Start a separate goroutine for the main function since we stub out _osExit
+	// to kill the current goroutine.
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+
+		os.Args = []string{"tcheck", "--peer", server.PeerInfo().HostPort, "--serviceName", server.ServiceName()}
+		main()
+	}()
+
+	// Wait for the main function to end.
+	<-done
+	assert.Equal(t, _exitUnknownUnhealthy, exitCode, "Expected non-zero exit")
+}
+
+func TestGetExitCode(t *testing.T) {
+	assert.Equal(t, 5, getExitCode(exitError{5, ""}))
+	assert.Equal(t, 1, getExitCode(errors.New("unknown")))
 }

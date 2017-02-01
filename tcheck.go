@@ -32,24 +32,64 @@ import (
 	"github.com/uber/tchannel-go/thrift"
 )
 
-func main() {
-	ch, err := tchannel.NewChannel("tcheck", nil)
-	if err != nil {
-		fatal(1, "Failed to create tchannel: %v", err)
-	}
+const (
+	_serviceName = "tcheck"
 
-	var (
-		serviceName = flag.String("serviceName", "", "service name to check health of")
-		peer        = flag.String("peer", "", "peer to hit directly")
-	)
+	_exitUnknown          = 1
+	_exitUsage            = 2
+	_exitUnknownUnhealthy = 3
+	_exitExplitiUnhealthy = 4
+)
+
+var _osExit = os.Exit
+
+type exitError struct {
+	code int
+	msg  string
+}
+
+func (e exitError) Error() string {
+	return e.msg
+}
+
+var (
+	serviceName = flag.String("serviceName", "", "service name to check health of")
+	peer        = flag.String("peer", "", "peer to hit directly")
+)
+
+func main() {
 	flag.Parse()
 
-	if *peer == "" {
-		fatal(1, "Must specify a peer to health check")
+	if err := healthCheck(*peer, *serviceName); err != nil {
+		fmt.Println(err)
+		_osExit(getExitCode(err))
 	}
 
-	ch.Peers().Add(*peer)
-	thriftClient := thrift.NewClient(ch, *serviceName, nil)
+	fmt.Println("OK")
+}
+
+func getExitCode(err error) int {
+	if ee, ok := err.(exitError); ok {
+		return ee.code
+	}
+	return _exitUnknown
+}
+
+func healthCheck(peer, serviceName string) error {
+	if peer == "" {
+		return exitError{_exitUsage, "Must specify a peer to health check"}
+	}
+	if serviceName == "" {
+		return exitError{_exitUsage, "Must specify a service name for the destination"}
+	}
+
+	ch, err := tchannel.NewChannel(_serviceName, nil)
+	if err != nil {
+		return err
+	}
+
+	ch.Peers().Add(peer)
+	thriftClient := thrift.NewClient(ch, serviceName, nil)
 	client := meta.NewTChanMetaClient(thriftClient)
 
 	ctx, cancel := thrift.NewContext(time.Second)
@@ -57,16 +97,11 @@ func main() {
 
 	val, err := client.Health(ctx)
 	if err != nil {
-		fatal(2, "NOT OK %v\nError: %v\n", *serviceName, err)
+		return exitError{_exitUnknownUnhealthy, fmt.Sprintf("NOT OK %v\nError: %v\n", serviceName, err)}
 	}
 	if val.Ok != true {
-		fatal(3, "NOT OK %v\n", *val.Message)
+		return exitError{_exitExplitiUnhealthy, fmt.Sprintf("NOT OK %v\n", *val.Message)}
 	}
 
-	fmt.Printf("OK\n")
-}
-
-func fatal(code int, msg string, args ...interface{}) {
-	fmt.Printf(msg, args...)
-	os.Exit(code)
+	return nil
 }
