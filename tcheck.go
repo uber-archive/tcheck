@@ -26,11 +26,10 @@ import (
 	"os"
 	"time"
 
-	"github.com/uber/tchannel-go"
-	"github.com/uber/tchannel-go/hyperbahn"
-	"github.com/uber/tchannel-go/thrift"
-
 	"github.com/uber/tcheck/gen-go/meta"
+
+	"github.com/uber/tchannel-go"
+	"github.com/uber/tchannel-go/thrift"
 )
 
 func main() {
@@ -39,20 +38,17 @@ func main() {
 		fatal(1, "Failed to create tchannel: %v", err)
 	}
 
-	hostsFile := flag.String("hostsFile", "/etc/uber/hyperbahn/hosts.json", "hyperbahn hosts file")
-	serviceName := flag.String("serviceName", "hyperbahn", "service name to check health of")
-	peer := flag.String("peer", "", "peer to hit directly")
-
+	var (
+		serviceName = flag.String("serviceName", "", "service name to check health of")
+		peer        = flag.String("peer", "", "peer to hit directly")
+	)
 	flag.Parse()
 
-	var config hyperbahn.Configuration
-	if *peer != "" {
-		config = hyperbahn.Configuration{InitialNodes: []string{*peer}}
-	} else {
-		config = hyperbahn.Configuration{InitialNodesFile: *hostsFile}
+	if *peer == "" {
+		fatal(1, "Must specify a peer to health check")
 	}
-	hyperbahn.NewClient(ch, config, nil)
 
+	ch.Peers().Add(*peer)
 	thriftClient := thrift.NewClient(ch, *serviceName, nil)
 	client := meta.NewTChanMetaClient(thriftClient)
 
