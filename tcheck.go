@@ -36,8 +36,7 @@ import (
 func main() {
 	ch, err := tchannel.NewChannel("tcheck", nil)
 	if err != nil {
-		fmt.Println("failed to create tchannel:", err)
-		os.Exit(1)
+		fatal(1, "Failed to create tchannel: %v", err)
 	}
 
 	hostsFile := flag.String("hostsFile", "/etc/uber/hyperbahn/hosts.json", "hyperbahn hosts file")
@@ -61,14 +60,17 @@ func main() {
 	defer cancel()
 
 	val, err := client.Health(ctx)
-
 	if err != nil {
-		fmt.Printf("NOT OK %v\nError: %v\n", *serviceName, err)
-		os.Exit(2)
-	} else if val.Ok != true {
-		fmt.Printf("NOT OK %v\n", *val.Message)
-		os.Exit(3)
-	} else {
-		fmt.Printf("OK\n")
+		fatal(2, "NOT OK %v\nError: %v\n", *serviceName, err)
 	}
+	if val.Ok != true {
+		fatal(3, "NOT OK %v\n", *val.Message)
+	}
+
+	fmt.Printf("OK\n")
+}
+
+func fatal(code int, msg string, args ...interface{}) {
+	fmt.Printf(msg, args...)
+	os.Exit(code)
 }
