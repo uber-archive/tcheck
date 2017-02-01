@@ -23,6 +23,7 @@ package main
 import (
 	"errors"
 	"os"
+	"runtime"
 	"testing"
 
 	"github.com/uber/tchannel-go"
@@ -142,6 +143,7 @@ func TestIntegrationError(t *testing.T) {
 	var exitCode int
 	_osExit = func(code int) {
 		exitCode = code
+		runtime.Goexit()
 	}
 
 	server := setupServer(t, nil)
