@@ -22,6 +22,7 @@ package main
 
 import (
 	"errors"
+	"net"
 	"os"
 	"runtime"
 	"testing"
@@ -41,6 +42,28 @@ func healthNotOk(ctx thrift.Context) (ok bool, message string) {
 
 func healthOk(ctx thrift.Context) (ok bool, message string) {
 	return true, "hello world"
+}
+
+func setupListenIPServer(t *testing.T) *tchannel.Channel {
+	ch, err := tchannel.NewChannel("svc", nil)
+	require.NoError(t, err, "Failed to set up new channel")
+
+	ip, err := tchannel.ListenIP()
+	require.NoError(t, err, "Failed to get ListenIP")
+
+	// set up default health handler
+	thrift.NewServer(ch)
+
+	err = ch.ListenAndServe(ip.String() + ":0")
+	require.NoError(t, err, "Failed to ListenAndServe")
+
+	return ch
+}
+
+func getPort(t *testing.T, hostPort string) string {
+	_, port, err := net.SplitHostPort(hostPort)
+	require.NoError(t, err, "Failed to split hostPort %q", hostPort)
+	return port
 }
 
 func setupServer(t *testing.T, fn thrift.HealthFunc) *tchannel.Channel {
@@ -74,6 +97,8 @@ func TestHealthCheckBadArgs(t *testing.T) {
 		return true, ""
 	})
 
+	publicHandler := setupListenIPServer(t)
+
 	tests := []struct {
 		msg      string
 		peer     string
@@ -103,9 +128,14 @@ func TestHealthCheckBadArgs(t *testing.T) {
 			wantExit: _exitUsage,
 		},
 		{
-
 			msg:      "healthy server",
 			peer:     healthyHandler.PeerInfo().HostPort,
+			svc:      "svc",
+			wantExit: 0,
+		},
+		{
+			msg:      "healthy server on ListenIP",
+			peer:     "localhost:" + getPort(t, publicHandler.PeerInfo().HostPort),
 			svc:      "svc",
 			wantExit: 0,
 		},
@@ -193,4 +223,31 @@ func TestIntegrationError(t *testing.T) {
 func TestGetExitCode(t *testing.T) {
 	assert.Equal(t, 5, getExitCode(exitError{5, ""}))
 	assert.Equal(t, 1, getExitCode(errors.New("unknown")))
+}
+
+func TestRemapLocalhost(t *testing.T) {
+	ip, err := tchannel.ListenIP()
+	require.NoError(t, err, "Failed to get ListenIP")
+
+	tests := []struct {
+		hostPort string
+		want     string
+	}{
+		{
+			hostPort: "localhost:1:2",
+			want:     "localhost:1:2",
+		},
+		{
+			hostPort: "1.1.1.1:2",
+			want:     "1.1.1.1:2",
+		},
+		{
+			hostPort: "localhost:2",
+			want:     ip.String() + ":2",
+		},
+	}
+
+	for _, tt := range tests {
+		assert.Equal(t, tt.want, remapLocalhost(tt.hostPort), "Remap %q", tt.hostPort)
+	}
 }

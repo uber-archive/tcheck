@@ -23,7 +23,9 @@ package main
 import (
 	"flag"
 	"fmt"
+	"net"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/uber/tcheck/gen-go/meta"
@@ -92,6 +94,7 @@ func healthCheck(peer, serviceName string, timeout time.Duration) error {
 		return err
 	}
 
+	peer = remapLocalhost(peer)
 	ch.Peers().Add(peer)
 	thriftClient := thrift.NewClient(ch, serviceName, nil)
 	client := meta.NewTChanMetaClient(thriftClient)
@@ -108,4 +111,27 @@ func healthCheck(peer, serviceName string, timeout time.Duration) error {
 	}
 
 	return nil
+}
+
+// TChannel tools remap the string "localhost" to the best public IP on the host.
+// The protocol assumes services only listen on a single host:port, so the
+// client libraries tend to listen on a single interface. This localhost remapping
+// makes it easier for users to health check an instance on the current host
+// without having to find the public IP of the machine.
+func remapLocalhost(hostPort string) string {
+	host, port, err := net.SplitHostPort(hostPort)
+	if err != nil {
+		return hostPort
+	}
+
+	if !strings.EqualFold(host, "localhost") {
+		return hostPort
+	}
+
+	ip, err := tchannel.ListenIP()
+	if err != nil {
+		return hostPort
+	}
+
+	return net.JoinHostPort(ip.String(), port)
 }
