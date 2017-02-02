@@ -1,23 +1,21 @@
 # tcheck
 
-Simple go TChannel / Hyperbahn health checker.
+A simple TChannel health checker written in Go.
 
-Takes these flags:
+`tcheck` supports the following flags:
 
-* `--hostsFile` specify Hyperbahn hosts file; default is /etc/uber/hyperbahn/hosts.json
-* `--peer` a singular host:port to hit; overrides `--hostsFile`
-* `--serviceName` specify service name; default hyperbahn
+* `--peer` a singular host:port to health check
+* `--serviceName` the target's service name
 
 Examples:
 
 ```
-tcheck --peer 127.0.0.1:21300 --serviceName populous
-tcheck --serviceName keyvalue
+tcheck --peer 127.0.0.1:4532 --serviceName keyvalue
 ```
 
 ## Tests
 
-Tests use `exec` so you'll have to `go build` first, then `go test`.
+Run tests using `go test`.
 
 ## License
 
