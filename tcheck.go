@@ -28,11 +28,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/uber/tcheck/gen-go/meta"
+	"github.com/uber/tcheck/internal/gen-go/meta"
 
 	"github.com/uber/tchannel-go"
 	"github.com/uber/tchannel-go/thrift"
 )
+
+//go:generate thrift-gen --generateThrift --inputFile meta.thrift --outputDir ./internal/gen-go
 
 const (
 	_serviceName = "tcheck"

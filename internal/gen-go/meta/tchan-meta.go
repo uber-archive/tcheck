@@ -42,6 +42,10 @@ func (c *tchanMetaClient) Health(ctx thrift.Context) (*HealthStatus, error) {
 	args := MetaHealthArgs{}
 	success, err := c.client.Call(ctx, c.thriftService, "health", &args, &resp)
 	if err == nil && !success {
+		switch {
+		default:
+			err = fmt.Errorf("received no result or unknown exception for health")
+		}
 	}
 
 	return resp.GetSuccess(), err
@@ -52,6 +56,10 @@ func (c *tchanMetaClient) ThriftIDL(ctx thrift.Context) (string, error) {
 	args := MetaThriftIDLArgs{}
 	success, err := c.client.Call(ctx, c.thriftService, "thriftIDL", &args, &resp)
 	if err == nil && !success {
+		switch {
+		default:
+			err = fmt.Errorf("received no result or unknown exception for thriftIDL")
+		}
 	}
 
 	return resp.GetSuccess(), err
