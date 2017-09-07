@@ -109,7 +109,7 @@ func healthCheck(peer, serviceName string, timeout time.Duration) error {
 		return exitError{_exitUnknownUnhealthy, fmt.Sprintf("NOT OK %v\nError: %v\n", serviceName, err)}
 	}
 	if val.Ok != true {
-		return exitError{_exitExplicitUnhealthy, fmt.Sprintf("NOT OK %v\n", *val.Message)}
+		return exitError{_exitExplicitUnhealthy, fmt.Sprintf("NOT OK %v\n", val.GetMessage())}
 	}
 
 	return nil
