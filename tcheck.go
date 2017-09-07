@@ -39,10 +39,10 @@ import (
 const (
 	_serviceName = "tcheck"
 
-	_exitUnknown          = 1
-	_exitUsage            = 2
-	_exitUnknownUnhealthy = 3
-	_exitExplitiUnhealthy = 4
+	_exitUnknown           = 1
+	_exitUsage             = 2
+	_exitUnknownUnhealthy  = 3
+	_exitExplicitUnhealthy = 4
 )
 
 var _osExit = os.Exit
@@ -109,7 +109,7 @@ func healthCheck(peer, serviceName string, timeout time.Duration) error {
 		return exitError{_exitUnknownUnhealthy, fmt.Sprintf("NOT OK %v\nError: %v\n", serviceName, err)}
 	}
 	if val.Ok != true {
-		return exitError{_exitExplitiUnhealthy, fmt.Sprintf("NOT OK %v\n", *val.Message)}
+		return exitError{_exitExplicitUnhealthy, fmt.Sprintf("NOT OK %v\n", val.GetMessage())}
 	}
 
 	return nil

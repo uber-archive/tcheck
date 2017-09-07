@@ -28,12 +28,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/uber/tchannel-go"
-	"github.com/uber/tchannel-go/testutils"
-	"github.com/uber/tchannel-go/thrift"
+	"github.com/uber/tcheck/internal/gen-go/meta"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/uber/tchannel-go"
+	"github.com/uber/tchannel-go/testutils"
+	"github.com/uber/tchannel-go/thrift"
 )
 
 func healthNotOk(ctx thrift.Context) (ok bool, message string) {
@@ -150,7 +151,7 @@ func TestHealthCheckBadArgs(t *testing.T) {
 			msg:      "unhealthy health handler",
 			peer:     unhealthyHandler.PeerInfo().HostPort,
 			svc:      "svc",
-			wantExit: _exitExplitiUnhealthy,
+			wantExit: _exitExplicitUnhealthy,
 			wantErr:  "test-error",
 		},
 		{
@@ -191,6 +192,29 @@ func TestIntegrationSuccess(t *testing.T) {
 
 	os.Args = []string{"tcheck", "--peer", server.PeerInfo().HostPort, "--serviceName", server.ServiceName()}
 	main()
+}
+
+type unhealthyHandler struct {
+	// Embed interface so unimplemented methods cause panic.
+	meta.TChanMeta
+}
+
+func (unhealthyHandler) Health(_ thrift.Context) (*meta.HealthStatus, error) {
+	return &meta.HealthStatus{
+		Ok: false,
+	}, nil
+}
+
+func TestIntegrationNotOKNoMessage(t *testing.T) {
+	server := setupServer(t, nil)
+	defer server.Close()
+
+	tServer := thrift.NewServer(server)
+	tServer.Register(meta.NewTChanMetaServer(unhealthyHandler{}))
+
+	err := healthCheck(server.PeerInfo().HostPort, server.ServiceName(), time.Second)
+	require.Error(t, err, "Expected health check to fail")
+	assert.Equal(t, _exitExplicitUnhealthy, getExitCode(err), "Unexpected exit code")
 }
 
 func TestIntegrationError(t *testing.T) {
