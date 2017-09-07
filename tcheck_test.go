@@ -150,7 +150,7 @@ func TestHealthCheckBadArgs(t *testing.T) {
 			msg:      "unhealthy health handler",
 			peer:     unhealthyHandler.PeerInfo().HostPort,
 			svc:      "svc",
-			wantExit: _exitExplitiUnhealthy,
+			wantExit: _exitExplicitUnhealthy,
 			wantErr:  "test-error",
 		},
 		{
