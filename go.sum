@@ -1,0 +1,16 @@
+github.com/apache/thrift v0.0.0-20170131211753-2d6060d88206 h1:xYbS3axzqltos2djgElUPOSnKaSkZ7tqGgKeQIgmQoc=
+github.com/apache/thrift v0.0.0-20170131211753-2d6060d88206/go.mod h1:cp2SuWMxlEZw2r+iP2GNCdIi4C1qmUzdZFSVb+bacwQ=
+github.com/davecgh/go-spew v1.1.0 h1:ZDRjVQ15GmhC3fiQ8ni8+OwkZQO4DARzQgrnXU1Liz8=
+github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
+github.com/opentracing/opentracing-go v1.0.0 h1:fDGaqxLymyQ1cyyVYBrR6p4MPwKZA7clqxUleobb2VA=
+github.com/opentracing/opentracing-go v1.0.0/go.mod h1:UkNAQd3GIcIGf0SeVgPpRdFStlNbqXla1AfSYxPUl2o=
+github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
+github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
+github.com/stretchr/testify v0.0.0-20170130113145-4d4bfba8f1d1 h1:Zx8Rp9ozC4FPFxfEKRSUu8+Ay3sZxEUZ7JrCWMbGgvE=
+github.com/stretchr/testify v0.0.0-20170130113145-4d4bfba8f1d1/go.mod h1:a8OnRcib4nhh0OaRAV+Yts87kKdq0PP7pXfy6kDkUVs=
+github.com/uber-go/atomic v1.0.0 h1:yQsJHvJrBSc9oOPPtsGgukSmaboLPokUVCYPRDBC9g8=
+github.com/uber-go/atomic v1.0.0/go.mod h1:/Ct5t2lcmbJ4OSe/waGBoaVvVqtO0bmtfVNex1PFV8g=
+github.com/uber/tchannel-go v1.2.3 h1:l+M5MdofOMPGyI537T6CnpROEgz8atXVD2mL0n67VZg=
+github.com/uber/tchannel-go v1.2.3/go.mod h1:Rrgz1eL8kMjW/nEzZos0t+Heq0O4LhnUJVA32OvWKHo=
+golang.org/x/net v0.0.0-20170114055629-f2499483f923 h1:cLl2p2++IYXqH4YzQ7uIc7QLOa4SU0x1vSy9Da++V94=
+golang.org/x/net v0.0.0-20170114055629-f2499483f923/go.mod h1:mL1N/T3taQHkDXs73rZJwtUhF3w3ftmwwsq0BUmARs4=
